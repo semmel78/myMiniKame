@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+    <title>myKame Controller</title>    
+    <style> 
+        @font-face{ 
+          font-family: "bit"; 
+          src: url("css/8bit.ttf"); 
+      }    
+      * {
+        padding: 0;
+        margin: 0;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none; /* Disable selection/copy in UIWebView */          
+      }            
+      html
+      {
+          -ms-touch-action: manipulation;
+          touch-action: manipulation;
+      }
+      body
+      {
+          width:  100%;
+          height: 100%;
+          margin: 0px;  
+          padding:0px; 
+          touch-action: none;
+          -ms-touch-action: none;
+          overflow:hidden;
+          font-family: "bit";
+		  background-image: url("./img/bg3.jpg");
+		  background-repeat: no-repeat;
+		  background-position: center center;
+		  background-attachment: fixed;
+      }
+      canvas
+      {
+          image-rendering: optimizeSpeed;
+          image-rendering: -moz-crisp-edges;
+          image-rendering: -webkit-optimize-contrast;
+          image-rendering: -o-crisp-edges;
+          image-rendering: crisp-edges;
+          -ms-interpolation-mode: nearest-neighbor;
+           touch-action-delay: none;
+          touch-action: none;
+          -ms-touch-action: none;
+      }
+  </style>     
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+      <script src="./js/multikey.js"></script>
+      <script src="./js/CanvasGamepad.js"></script>
+    <script>
+      CanvasGamepad.setup(
+        {
+          canvas:"controller",
+          trace:true,
+          debug:true,
+          hint:false,
+		  start:false,
+		  select:false,
+          buttons:[
+            {name:"c", "key":"c"},
+            {name:"z", "key":"x"}
+          ]      
+        }
+      );
+      multikey.setup(CanvasGamepad.events, "cx", true);
+// Create new WebSocket
+var mySocket = new WebSocket("ws://10.0.0.1/ws");
+// Attach listeners
+mySocket.onmessage = function(event) { alert("Der Server sagt: " + event.data); };
+//mySocket.onopen = function(event) {...};
+//mySocket.onclose = function(event) {...};
+//mySocket.onerror = function(event) {...}; 
+	  
+/*
+** @description the below example simply logs out the observe method return
+*/
+setInterval(
+	function()
+	{
+		var map = CanvasGamepad.observe();
+		//console.log(new Date() + ":" + JSON.stringify(map))
+		//mySocket.send(JSON.stringify(map));
+		
+		var myCommand = { "com":0, "val":0 };
+
+		if(map["y-dir"] == 0)
+		{
+			if(map["x-dir"] == 0)
+			{ 
+ 				if(map["c"] == 1) {
+					// say hello
+					myCommand.com = 8;
+					myCommand.val = 0;
+				} else if(map["z"] == 1) {
+					// push up
+					myCommand.com = 6;
+					myCommand.val = 0;
+				} else {
+					// home
+					myCommand.com = 0;
+					myCommand.val = 0;
+				}
+			} else if(map["x-dir"] == -1) {
+				if(map["c"] == 1) {
+					// moonwalk
+					myCommand.com = 12;
+					myCommand.val = Math.abs((1000 * map["x-axis"]).toFixed(0));
+				} else {
+					// turn left
+					myCommand.com = 3;
+					myCommand.val = Math.abs((550 * map["x-axis"]).toFixed(0));
+				}
+			} else if(map["x-dir"] == 1) {
+				if(map["c"] == 1) {
+					// dance
+					myCommand.com = 11;
+					myCommand.val = Math.abs((1000 * map["x-axis"]).toFixed(0));
+				} else {
+					// turn right
+					myCommand.com = 4;
+					myCommand.val = Math.abs((550 * map["x-axis"]).toFixed(0));
+				}
+			}
+		} else if(map["y-dir"] == -1) {
+			// run forward
+			myCommand.com = 1;
+			myCommand.val = Math.abs((600 * map["y-axis"]).toFixed(0));
+		} else if(map["y-dir"] == 1) {
+			if(map["c"] == 1) {
+				// button c pressed while backwards -> jump
+				myCommand.com = 8;
+				myCommand.val = 0;
+			} else {
+				// run reverse
+				myCommand.com = 99;
+				myCommand.val = Math.abs((600 * map["y-axis"]).toFixed(0));
+			}
+		}
+		mySocket.send(JSON.stringify(myCommand));		
+		console.log(new Date() + ":" + JSON.stringify(myCommand))
+	}
+	,200
+);
+    </script>
+  </body>
+</html>
+
+
